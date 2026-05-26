@@ -1,49 +1,42 @@
-# Ассистент для Bitrix: отслеживание клиентов + напоминания о встречах
+# Быстрый помощник для Bitrix (без сложностей)
 
-Этот сервис принимает webhook-события из Bitrix24, сохраняет активность по клиентам и автоматически шлет напоминания о созвонах/встречах.
-
-## Что умеет
-- Принимает события сообщений клиентов (`/bitrix/events`).
-- Фиксирует клиента, чат, текст последнего сообщения и время встречи.
-- Ставит таймер и отправляет напоминание за `REMINDER_MINUTES_BEFORE` минут до встречи.
-
-## Быстрый старт
+## Запуск за 1 команду
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-uvicorn app:app --reload --port 8000
+./quick_start.sh
 ```
 
-Проверка:
+После запуска открой:
+- `http://127.0.0.1:8000/health`
+- `http://127.0.0.1:8000/docs` (удобная форма, чтобы сразу добавить встречу)
+
+## Самый быстрый сценарий: прямо тут, без Bitrix
+
+Добавь встречу через Swagger (`/docs`) в методе `POST /quick/add` или командой:
 
 ```bash
-curl http://127.0.0.1:8000/health
-```
-
-## Пример события от Bitrix
-
-```bash
-curl -X POST http://127.0.0.1:8000/bitrix/events \
+curl -X POST http://127.0.0.1:8000/quick/add \
   -H "Content-Type: application/json" \
-  -H "X-Webhook-Secret: change_me" \
   -d '{
-    "client_id": "123",
     "client_name": "ООО Ромашка",
-    "chat_id": "chat123",
-    "text": "Давайте созвонимся завтра в 15:00",
-    "created_at": "2026-05-26T10:00:00+03:00",
+    "chat_id": "my-chat",
+    "text": "созвон по договору",
     "meeting_at": "2026-05-27T15:00:00+03:00"
   }'
 ```
 
-## Как подключить к Bitrix24
-1. В Bitrix создайте исходящий webhook/робот, который отправляет событие в `POST /bitrix/events`.
-2. Передавайте заголовок `X-Webhook-Secret` для проверки.
-3. Для отправки уведомлений назад в Bitrix укажите `BITRIX_OUTGOING_WEBHOOK_URL`.
+Напоминание придёт в лог сервиса (`[REMINDER] ...`).
 
-## Важно
-- Сейчас хранение данных в памяти процесса (для продакшна добавьте БД: PostgreSQL/Redis).
-- При перезапуске приложения текущие встречи сбрасываются.
+## Подключение Bitrix (когда будешь готов)
+
+1. В Bitrix настрой исходящий webhook на `POST /bitrix/events`.
+2. Если нужно, задай секрет в `.env` (`BITRIX_WEBHOOK_SECRET`) и передавай заголовок `X-Webhook-Secret`.
+3. Чтобы отправлять сообщения обратно в Bitrix, укажи `BITRIX_OUTGOING_WEBHOOK_URL`.
+
+## Настройки
+
+Файл `.env`:
+- `BITRIX_WEBHOOK_SECRET=change_me`
+- `BITRIX_OUTGOING_WEBHOOK_URL=...` (можно оставить пустым для быстрого режима)
+- `TIMEZONE=Europe/Moscow`
+- `REMINDER_MINUTES_BEFORE=30`
